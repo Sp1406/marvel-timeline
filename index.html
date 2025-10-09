@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marvel Cinematic Timeline Nexus</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        ::-webkit-scrollbar {
+            display: none;
+        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0d0d0d;
+            
+        }
+        .timeline-container {
+            position: relative;
+        }
+        .event-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+            position: absolute; 
+            width: 180px; 
+            border-radius: 0.75rem; 
+            background-color: #1a1a1a; 
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+            padding: 0.75rem;
+            border: 1px solid #333;
+        }
+        .event-card:hover {
+            transform: scale(1.03);
+            box-shadow: 0 0 15px rgba(230, 0, 0, 0.7);
+            z-index: 20;
+        }
+        .branch-card {
+            transform: translateX(-50%);
+            padding-top: 0.5rem;
+            padding-bottom: 0.5rem;
+        }
+        .main-mcu-card {
+            transform: translateX(-50%);
+        }
+
+        .timeline-svg-path {
+            fill: none;
+            stroke-width: 3;
+            stroke-linecap: round;
+        }
+        .mcu-line {
+            stroke: #3182ce;
+        }
+        .merge-line {
+            stroke: #f6ad55;
+        }
+        .split-line {
+            stroke: #6EE7B7;
+            stroke-width: 4;
+        }
+        .reboot-line {
+            stroke: #dc2626;
+            stroke-dasharray: 6 6;
+            stroke-width: 2;
+        }
+
+        .merge-dot {
+            fill: #f6ad55;
+            stroke: #0d0d0d;
+            stroke-width: 2;
+        }
+
+        @media (max-width: 768px) {
+            .event-card {
+                width: 150px;
+            }
+        }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'marvel-red': '#e53e3e',
+                        'marvel-gold': '#f6ad55',
+                        'dark-bg': '#0d0d0d',
+                        'dark-card': '#1a1a1a',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="text-white">
+    <main class="p-8">
+        <div id="timeline-visualization" class="timeline-container h-[3000px]"> 
+            <svg id="timeline-svg" class="absolute top-0 left-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
+            </svg>
+            <div id="event-cards-container" class="absolute top-0 left-0 w-full h-full">
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const timelineVisualization = document.getElementById('timeline-visualization');
+        const svgElement = document.getElementById('timeline-svg');
+        const cardsContainer = document.getElementById('event-cards-container');
+
+        const Y_MAIN_LINE = 1500; 
+        const EVENT_WIDTH = 180; 
+        const EVENT_SPACING = 200; 
+        const X_OFFSET = 50;
+        const CARD_CENTERING_OFFSET = -70; 
+        const Y_BRANCH_BASE_OFFSET = 180; 
+        const Y_BRANCH_STACK_SPACING = 200; 
+        const Y_SUB_BRANCH_OFFSET = 80;
+        
+        const timelineData = [
+            {
+                id: "mcu-main",
+                name: "MCU Main Timeline (Earth-616)",
+                events: [
+                    {
+                        id: "ironman",
+                        title: "Iron Man",
+                        date: "2008",
+                        cover: "https://upload.wikimedia.org/wikipedia/en/0/02/Iron_Man_%282008_film%29_poster.jpg",
+                        type: "Movie",
+                        timelineOrder: 2010.1,
+                    },
+                    {
+                        id: "incrediblehulk",
+                        title: "The Incredible Hulk",
+                        date: '2008',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/f/f0/The_Incredible_Hulk_%28film%29_poster.jpg',
+                        type: "Movie",
+                        timelineOrder: 2011.2,
+                    },
+                    {
+                        id: "ironman2",
+                        title: "Iron Man 2",
+                        date: '2010',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/e/ed/Iron_Man_2_poster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 2011.1
+                    },
+                    {
+                        id: "thor",
+                        title: 'Thor',
+                        date: '2011',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/9/95/Thor_%28film%29_poster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 2011.3
+                    },
+                    {
+                        id: "captainamerica",
+                        title: 'Captain America: The First Avenger',
+                        date: '2011',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/3/37/Captain_America_The_First_Avenger_poster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 1943.1
+                    },
+                    {
+                        id: 'avengers',
+                        title: 'The Avengers',
+                        date: '2012',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/8/8a/The_Avengers_%282012_film%29_poster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 2012.1
+                    },
+                    {
+                        id: 'ironman3',
+                        title: 'Iron Man 3',
+                        date: '2013',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/1/19/Iron_Man_3_poster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 2012.1,
+                    },
+                    {
+                        id: 'thor2',
+                        title: 'Thor: The Dark World',
+                        date: '2013',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/7/7f/Thor_The_Dark_World_poster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 2013.1
+                    },
+                    {
+                        id: 'captainamerica2',
+                        title: 'Captain America: The Winter Soldier',
+                        date: '2014',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/9/9e/Captain_America_The_Winter_Soldier_poster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 2014.1
+                    },
+                    {
+                        id: 'gotg',
+                        title: "Guardians of the Galaxy",
+                        date: '2014',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/3/33/Guardians_of_the_Galaxy_%28film%29_poster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 2014.1
+                    },
+                    {
+                        id: 'avengers2',
+                        title: 'Avengers: Age of Ultron',
+                        date: '2015',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/f/ff/Avengers_Age_of_Ultron_poster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 2015.1
+                    },
+                    {
+                        id: 'antman',
+                        title: 'Ant-Man',
+                        date: '2015',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/1/12/Ant-Man_%28film%29_poster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 2015.1
+                    },
+                    {
+                        id: 'captainamerica3',
+                        title: "Captain America: Civil War",
+                        date: '2016',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/5/53/Captain_America_Civil_War_poster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 2016.1
+                    },
+                    {
+                        id: 'drstrange',
+                        title: "Doctor Strange",
+                        date: "2016",
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/a/a1/Doctor_Strange_%282016_film%29_poster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 2016.4,
+                    },
+                    {
+                        id: 'gotg2',
+                        title: "Guardians of the Galaxy Vol. 2",
+                        date: '2017',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/thumb/3/32/Guardians_of_the_Galaxy_Vol._2_poster.jpg/250px-Guardians_of_the_Galaxy_Vol._2_poster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 2014.1
+                    },
+                    {
+                        id: 'mcuspiderman',
+                        title: "Spider-Man: Homecoming",
+                        date: '2017',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/f/f9/Spider-Man_Homecoming_poster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 2016.3
+                    },
+                    {
+                        id: "thor3",
+                        title: 'Thor: Ragnarok',
+                        date: '2017',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/7/7d/Thor_Ragnarok_poster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 2017.1
+                    },
+                    {
+                        id: "blackpanther",
+                        title: "Black Panther",
+                        date: '2018',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/d/d6/Black_Panther_%28film%29_poster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 2016.2
+                    }, 
+                    {
+                        id: "avengers3",
+                        title: "Avengers: Infinity War",
+                        date: '2018',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/4/4d/Avengers_Infinity_War_poster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 2018.1
+                    },
+                    {
+                        id: "antman2",
+                        title: "Ant-Man and the Wasp",
+                        date: '2018',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/2/2c/Ant-Man_and_the_Wasp_poster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 2018.0
+                    },
+                    {
+                        id: 'captainmarvel',
+                        title: "Captain Marvel",
+                        date: '2019',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/4/4e/Captain_Marvel_%28film%29_poster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 1995.1
+                    },
+                    {
+                        id: 'avengers4',
+                        title: "Avengers: Endgame",
+                        date: '2019',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/0/0d/Avengers_Endgame_poster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 2023.1
+                    },
+                    {
+                        id: 'mcuspiderman2',
+                        title: 'Spider-Man: Far From Home',
+                        date: '2019',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/b/bd/Spider-Man_Far_From_Home_poster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 2024.2
+                    },
+                    {
+                        id: 'blackwidow',
+                        title: 'Black Widow',
+                        date: '2021',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/thumb/e/e9/Black_Widow_%282021_film%29_poster.jpg/250px-Black_Widow_%282021_film%29_poster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 2016.1,
+                    },
+                    {
+                        id: 'shangchi',
+                        title: 'Shang-Chi and the Legend of the Ten Rings',
+                        date: '2021',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/thumb/7/74/Shang-Chi_and_the_Legend_of_the_Ten_Rings_poster.jpeg/250px-Shang-Chi_and_the_Legend_of_the_Ten_Rings_poster.jpeg',
+                        type: 'Movie',
+                        timelineOrder: 2024.0
+                    },
+                    {
+                        id: 'eternals',
+                        title: 'Eternals',
+                        date: '2021',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/9/9b/Eternals_%28film%29_poster.jpeg',
+                        type: 'Movie',
+                        timelineOrder: 2024.02
+                    },
+                    {
+                        id: 'mcuspiderman3',
+                        title: 'Spider-Man: No Way Home',
+                        date: '2021',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/thumb/0/00/Spider-Man_No_Way_Home_poster.jpg/250px-Spider-Man_No_Way_Home_poster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 2024.3
+                    },
+                    {
+                        id: 'drstrange2',
+                        title: 'Doctor Strange in the Multiverse of Madness',
+                        date: '2022',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/thumb/1/17/Doctor_Strange_in_the_Multiverse_of_Madness_poster.jpg/250px-Doctor_Strange_in_the_Multiverse_of_Madness_poster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 2024.4
+                    },
+                    {
+                        id: 'thor4',
+                        title: "Thor: Love and Thunder",
+                        date: '2022',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/thumb/8/88/Thor_Love_and_Thunder_poster.jpeg/250px-Thor_Love_and_Thunder_poster.jpeg',
+                        type: 'Movie',
+                        timelineOrder: 2025.2
+                    },
+                    {
+                        id: 'blackpanther2',
+                        title: 'Black Panther: Wakanda Forever',
+                        date: '2022',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/thumb/3/3b/Black_Panther_Wakanda_Forever_poster.jpg/250px-Black_Panther_Wakanda_Forever_poster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 2025.1
+                    },
+                    {
+                        id: 'antman3',
+                        title: 'Ant-Man and the Wasp: Quantumania',
+                        date: '2023',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/thumb/3/30/Ant-Man_and_the_Wasp_Quantumania_poster.jpg/250px-Ant-Man_and_the_Wasp_Quantumania_poster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 2026.1
+                    },
+                    {
+                        id: 'gotg3',
+                        title: "Guardians of the Galaxy Vol. 3",
+                        date: '2023',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/thumb/7/74/Guardians_of_the_Galaxy_Vol._3_poster.jpg/250px-Guardians_of_the_Galaxy_Vol._3_poster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 2026.2
+                    },
+                    {
+                        id: 'captainmarvel2',
+                        title: 'The Marvels',
+                        date: '2023',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/7/7a/The_Marvels_poster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 2026.3
+                    },
+                    {
+                        id: 'captainamerica4',
+                        title: 'Captain America: Brave New World',
+                        date: '2025',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/thumb/a/a4/Captain_America_Brave_New_World_poster.jpg/250px-Captain_America_Brave_New_World_poster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 2027.1
+                    },
+                    {
+                        id: 'thunderbolts',
+                        title: 'Thunderbolts*',
+                        date: '2025',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/thumb/9/90/Thunderbolts%2A_poster.jpg/250px-Thunderbolts%2A_poster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 2027.2
+                    },
+                    {
+                        id: 'avengers5',
+                        title: 'Avengers: Doomsday',
+                        date: '2026',
+                        cover: 'https://static.wikia.nocookie.net/marveldatabase/images/5/5a/Avengers_Doomsday_logo_002.jpg',
+                        type: 'Movie',
+                        timelineOrder: 2028.1
+                    }
+                ],
+            },
+            {
+                id: 'earth-828',
+                name: 'New Fantastic Four Timeline',
+                events: [
+                    {
+                        id: 'mcuf4',
+                        title: 'The Fantastic Four: First Steps',
+                        date: '2025',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/thumb/1/13/The_Fantastic_Four_First_Steps_poster.jpg/250px-The_Fantastic_Four_First_Steps_poster.jpg',
+                        type: 'Movie',
+                        isMergeSource: true,
+                        mergeTarget: 'mcu-main',
+                        mergeEventId: 'avengers5',
+                        timelineOrder: 1964.1
+                    }
+                ]
+            },
+            {
+                id: "raimi-verse",
+                name: "Raimi Spider-Man Universe",
+                events: [
+                    {
+                        id: "spiderman",
+                        title: "Spider-Man",
+                        date: "2002",
+                        cover:
+                            "https://upload.wikimedia.org/wikipedia/en/6/6c/Spider-Man_%282002_film%29_poster.jpg",
+                        type: "Movie",
+                        timelineOrder: 2002.1,
+                    },
+                    {
+                        id: "spiderman2",
+                        title: "Spider-Man 2",
+                        date: '2004',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/thumb/4/4e/Spider-Man_2_poster.jpg/250px-Spider-Man_2_poster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 2004.1,
+                    },
+                    {
+                        id: "spiderman3",
+                        title: "Spider-Man 3",
+                        date: '2007',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/thumb/7/7a/Spider-Man_3%2C_International_Poster.jpg/250px-Spider-Man_3%2C_International_Poster.jpg',
+                        type: 'Movie',
+                        rebootsEventId: 'mcuspiderman',
+                        isMergeSource: true,
+                        mergeTarget: "mcu-main",
+                        mergeEventId: "mcuspiderman3",
+                        timelineOrder: 2007.1,
+                    }
+                ],
+            },
+            {
+                id: "fox-xmen-og",
+                name: "Fox X-Men Timeline (OG)",
+                events: [
+                    {
+                        id: "xmen",
+                        title: "X-Men",
+                        date: "2000",
+                        cover:
+                            "https://upload.wikimedia.org/wikipedia/en/8/81/X-MenfilmPoster.jpg",
+                        type: "Movie",
+                        timelineOrder: 2000.1,
+                    },
+                    {
+                        id: "x2",
+                        title: "X-2",
+                        date: '2003',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/3/3e/X2_poster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 2003.1,
+                    },
+                    {
+                        id: "x3",
+                        title: "X-Men: The Last Stand",
+                        date: '2006',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/5/5b/X-Men_The_Last_Stand_theatrical_poster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 2006.1,
+                    },
+                    {
+                        id: "x4",
+                        title: "X-Men Origins: Wolverine",
+                        date: '2009',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/0/08/X-Men_Origins_Wolverine_theatrical_poster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 1979.1
+                    },
+                    {
+                        id: "x5",
+                        title: "X-Men: First Class",
+                        date: '2011',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/thumb/5/55/X-MenFirstClassMoviePoster.jpg/250px-X-MenFirstClassMoviePoster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 1962.1
+                    },
+                    {
+                        id: 'x6',
+                        title: 'The Wolverine',
+                        date: '2013',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/thumb/7/74/The_Wolverine_posterUS.jpg/250px-The_Wolverine_posterUS.jpg',
+                        type: 'Movie',
+                        timelineOrder: 2013.1
+                    },
+                    {
+                        id: 'x7-past',
+                        title: 'X-Men: Days of Future Past',
+                        date: '2014',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/thumb/0/0c/X-Men_Days_of_Future_Past_poster.jpg/250px-X-Men_Days_of_Future_Past_poster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 1973.1
+                    },
+                    {
+                        id: 'x7',
+                        title: 'X-Men: Days of Future Past',
+                        date: '2014',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/thumb/0/0c/X-Men_Days_of_Future_Past_poster.jpg/250px-X-Men_Days_of_Future_Past_poster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 2023.1
+                    },
+                    {
+                        id: "x10",
+                        title: "Logan",
+                        date: '2017',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/3/37/Logan_2017_poster.jpg',
+                        type: 'Movie',
+                        isMergeSource: true,
+                        mergeTarget: 'fox-xmen-new',
+                        mergeEventId: 'deadpool&wolverine',
+                        timelineOrder: 2029.1,
+                    },
+                ],
+            },
+            {
+                id: "fox-xmen-new",
+                name: "Fox X-Men Timeline (New)",
+                parentId: 'fox-xmen-og',
+                originEventId: 'x7-past',
+                events: [
+                    {
+                        id: 'x7-new',
+                        title: 'X-Men: Days of Future Past',
+                        date: '2014',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/thumb/0/0c/X-Men_Days_of_Future_Past_poster.jpg/250px-X-Men_Days_of_Future_Past_poster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 2023.1
+                    },
+                    {
+                        id: 'deadpool',
+                        title: 'Deadpool',
+                        date: '2016',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/thumb/2/23/Deadpool_%282016_poster%29.png/250px-Deadpool_%282016_poster%29.png',
+                        type: 'Movie',
+                        timelineOrder: 2016.1
+                    },
+                    {
+                        id: 'x8',
+                        title: 'X-Men: Apocalypse',
+                        date: '2016',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/thumb/0/04/X-Men_-_Apocalypse.jpg/250px-X-Men_-_Apocalypse.jpg',
+                        type: 'Movie',
+                        timelineOrder: 1983.1,
+                    },
+                    {
+                        id: 'deadpool2',
+                        title: "Deadpool 2",
+                        date: '2018',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/c/cf/Deadpool_2_poster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 2018.1,
+                    },
+                    {
+                        id: 'x9',
+                        title: "Dark Phoenix",
+                        date: '2019',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/9/9e/Dark_Phoenix_%28film%29.png',
+                        type: 'Movie',
+                        timelineOrder: 1992.1
+                    },
+                    {
+                        id: 'newmutants',
+                        title: "The New Mutants",
+                        date: '2020',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/thumb/1/1a/TheNewMutantsPoster.jpeg/250px-TheNewMutantsPoster.jpeg',
+                        type: 'Movie',
+                        timelineOrder: 2020.1
+                    },
+                    {
+                        id: "deadpool&wolverine",
+                        title: "Deadpool & Wolverine",
+                        date: "2024",
+                        cover:
+                            "https://upload.wikimedia.org/wikipedia/en/4/4c/Deadpool_%26_Wolverine_poster.jpg",
+                        type: "Movie",
+                        isMergeSource: true,
+                        mergeTarget: 'mcu-main',
+                        mergeEventId: 'avengers5',
+                        timelineOrder: 2024.1,
+                    },
+                ]
+            },
+            {
+                id: "blade-trilogy",
+                name: "Blade Trilogy",
+                events: [
+                    {
+                        id: "blade-1",
+                        title: "Blade",
+                        date: "1998",
+                        cover:
+                            "https://upload.wikimedia.org/wikipedia/en/1/19/Blade_movie.jpg",
+                        type: "Movie",
+                        timelineOrder: 1998.1,
+                    },
+                    {
+                        id: "blade-2",
+                        title: "Blade II",
+                        date: "2002",
+                        cover:
+                            "https://upload.wikimedia.org/wikipedia/en/6/6d/Blade_II_movie.jpg",
+                        type: "Movie",
+                        timelineOrder: 2002.1,
+                    },
+                    {
+                        id: "blade-3",
+                        title: "Blade: Trinity",
+                        date: "2004",
+                        cover:
+                            "https://upload.wikimedia.org/wikipedia/en/8/86/Blade_Trinity_poster.JPG",
+                        type: "Movie",
+                        isMergeSource: true,
+                        mergeTarget: "fox-xmen-new",
+                        mergeEventId: "deadpool&wolverine",
+                        timelineOrder: 2004.1,
+                    },
+                    {
+                        id: "blade-series",
+                        title: "Blade: The Series",
+                        date: "2006",
+                        cover:
+                            "https://m.media-amazon.com/images/M/MV5BMGJkNzhhMzQtYWQ0MS00MTM0LWFiMzktNGQ2YTI0ZjIyYTM3XkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg",
+                        type: "TV",
+                        timelineOrder: 2006.1,
+                    },
+                ],
+            },
+            {
+                id: "daredevil-and-elektra",
+                name: "Daredevil and Elektra",
+                events: [
+                    {
+                        id: "daredevil",
+                        title: "Daredevil",
+                        date: "2003",
+                        cover:
+                            "https://upload.wikimedia.org/wikipedia/en/0/04/Daredevil_poster.JPG",
+                        type: "Movie",
+                        timelineOrder: 2003.1,
+                    },
+                    {
+                        id: "elektra",
+                        title: "Elektra",
+                        date: '2005',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/thumb/2/21/Elektra_teaser.jpg/250px-Elektra_teaser.jpg',
+                        type: 'Movie',
+                        isMergeSource: true,
+                        mergeTarget: 'fox-xmen-new',
+                        mergeEventId: 'deadpool&wolverine',
+                        timelineOrder: 2005.1,
+                    }
+                ],
+            },
+            {
+                id: "hulk-movie",
+                name: "Hulk",
+                events: [
+                    {
+                        id: "hulk",
+                        title: "Hulk",
+                        date: "2003",
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/thumb/5/59/Hulk_movie.jpg/250px-Hulk_movie.jpg',
+                        type: 'Movie',
+                        rebootsEventId: 'incrediblehulk',
+                        timelineOrder: 2003.1,
+                    }
+                ]
+            },
+            {
+                id: "artisan-punisher",
+                name: "Artisan Punisher",
+                events: [
+                    {
+                        id: "punisher",
+                        title: "The Punisher",
+                        date: '2004',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/thumb/d/d9/Punisher_ver2.jpg/250px-Punisher_ver2.jpg',
+                        type: 'Movie',
+                        timelineOrder: 2004.1,
+                    }
+                ]
+            },
+            {
+                id: "lionsgate-punisher",
+                name: "Lionsgate Punisher",
+                events: [
+                    {
+                        id: "punisherwar",
+                        title: "Punisher: War Zone",
+                        date: '2008',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/thumb/c/cf/Punisherwarzoneteaser.jpg/250px-Punisherwarzoneteaser.jpg',
+                        type: 'Movie',
+                        rebootsEventId: 'punisher',
+                        timelineOrder: 2010.1,
+                    }
+                ]
+            },
+            {
+                id: "f4-20cf",
+                name: "Fantastic Four - 20th Century Fox",
+                events: [
+                    {
+                        id: "f4",
+                        title: "Fantastic Four",
+                        date: '2005',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/thumb/4/4a/Fantastic_Four_poster.jpg/250px-Fantastic_Four_poster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 2005.1,
+                    },
+                    {
+                        id: "f4-2",
+                        title: "Fantastic Four: Rise of the Silver Surfer",
+                        date: '2007',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/e/e6/Fantastic_Four_2_Poster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 2007.1,
+                        isMergeSource: true,
+                        mergeTarget: 'fox-xmen-new',
+                        mergeEventId: 'deadpool&wolverine'
+                    }
+                ]
+            },
+            {
+                id: "ghost-rider",
+                name: "Ghost Rider",
+                events: [
+                    {
+                        id: "ghostrider",
+                        title: "Ghost Rider",
+                        date: '2007',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/thumb/7/71/GhostRiderBigPoster.jpg/250px-GhostRiderBigPoster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 2007.1,
+                    },
+                    {
+                        id: "ghostrider-2",
+                        title: "Ghost Rider: Spirit of Vengeance",
+                        date: "2011",
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/thumb/2/2f/Ghost_Rider_2_Poster.jpg/250px-Ghost_Rider_2_Poster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 2015.1,
+                    }
+                ]
+            },
+            {
+                id: "tasm-verse",
+                name: "The Amazing Spider-Man Verse",
+                events: [
+                    {
+                        id: 'tasm',
+                        title: "The Amazing Spider-Man",
+                        date: '2012',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/thumb/e/e0/The_Amazing_Spider-Man_%28film%29_poster.jpg/250px-The_Amazing_Spider-Man_%28film%29_poster.jpg',
+                        type: 'Movie',
+                        rebootsEventId: 'spiderman3',
+                        timelineOrder: 2012.1,
+                    },
+                    {
+                        id: "tasm2",
+                        title: 'The Amazing Spider-Man 2',
+                        date: '2014',
+                        cover: "https://upload.wikimedia.org/wikipedia/en/thumb/2/24/The_Amazing_Spider-Man_2_poster.jpg/250px-The_Amazing_Spider-Man_2_poster.jpg",
+                        type: 'Movie',
+                        rebootsEventId: 'mcuspiderman',
+                        isMergeSource: true,
+                        mergeTarget: "mcu-main",
+                        mergeEventId: "mcuspiderman3",
+                        timelineOrder: 2014.1
+                    }
+                ]
+            },
+            {
+                id: 'f4-reboot',
+                name: "Fantastic Four Reboot",
+                events: [
+                    {
+                        id: "f4reboot",
+                        title: "Fantastic Four",
+                        date: '2015',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/thumb/f/f4/Fantastic_Four_2015_poster.jpg/250px-Fantastic_Four_2015_poster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 2015.1,
+                        rebootsEventId: 'f4-2'
+                    }
+                ]
+            },
+            {
+                id: "ssu",
+                name: "Sony's Spider-Man Universe",
+                events: [
+                    {
+                        id: "venom",
+                        title: "Venom",
+                        date: '2018',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/thumb/1/10/Venom_%282018_film%29_poster.png/250px-Venom_%282018_film%29_poster.png',
+                        type: 'Movie',
+                        timelineOrder: 2018.1
+                    },
+                    {
+                        id: 'venom2',
+                        title: 'Venom: Let There Be Carnage',
+                        date: '2021',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/thumb/a/a7/Venom_Let_There_Be_Carnage_poster.jpg/250px-Venom_Let_There_Be_Carnage_poster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 2019.1
+                    },
+                    {
+                        id: 'morbius',
+                        title: 'Morbius',
+                        date: '2022',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/thumb/2/2f/Morbius_%28film%29_poster.jpg/250px-Morbius_%28film%29_poster.jpg',
+                        type: 'Movie',
+                        isMergeSource: true,
+                        mergeTarget: 'mcu-main',
+                        mergeEventId: 'mcuspiderman3',
+                        timelineOrder: 2024.2
+                    },
+                    {
+                        id: 'madameweb',
+                        title: 'Madame Web',
+                        date: '2024',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/thumb/f/f0/Madame_Web_%28film%29_poster.jpg/250px-Madame_Web_%28film%29_poster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 2003.1
+                    },
+                    {
+                        id: 'venom3',
+                        title: 'Venom: The Last Dance',
+                        date: '2024',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/a/a3/Venom_The_Last_Dance_Poster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 2024.3
+                    },
+                    {
+                        id: 'kraven',
+                        title: 'Kraven the Hunter',
+                        date: '2024',
+                        cover: 'https://upload.wikimedia.org/wikipedia/en/thumb/e/ec/Kraven_the_Hunter_%28film%29_poster.jpg/250px-Kraven_the_Hunter_%28film%29_poster.jpg',
+                        type: 'Movie',
+                        timelineOrder: 2024.1
+                    }
+                ]
+            }
+        ];
+        
+        let eventPositionMap = {};
+        let allEvents = {}; 
+        let xIndexMap = {}; 
+        let branchYMap = {}; 
+
+        function createSvgElement(tag, attributes) {
+            const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+            for (const key in attributes) {
+                el.setAttribute(key, attributes[key]);
+            }
+            return el;
+        }
+
+        function createEventCardHTML(event, isMain) {
+            return `
+                <div class="event-card ${isMain ? 'main-mcu-card' : 'branch-card'} text-white" 
+                     id="card-${event.id}">
+                    <div class="flex items-center space-x-2">
+                        <img src="${event.cover}" alt="${event.title} Cover" 
+                             class="w-8 h-12 object-cover rounded-md shadow-md flex-shrink-0"
+                             onerror="this.onerror=null;this.src='https://placehold.co/32x48/2c2c2c/fff?text=N%2FA';"
+                        >
+                        <div>
+                            <p class="text-[10px] text-marvel-gold font-semibold">${event.date} (${event.type || 'Project'})</p>
+                            <h3 class="text-sm font-bold leading-tight">${event.title}</h3>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderTimeline() {
+            svgElement.innerHTML = '';
+            cardsContainer.innerHTML = '';
+            eventPositionMap = {};
+            allEvents = {};
+            xIndexMap = {};
+            branchYMap = {};
+
+            const mainTimeline = timelineData.find(b => b.id === 'mcu-main');
+            if (!mainTimeline) {
+                console.error('MCU Main Timeline not found!');
+                return;
+            }
+
+
+            let allEventsFlat = [];
+            timelineData.forEach(branch => {
+                branch.events.forEach(event => {
+                    const orderValue = event.timelineOrder !== undefined ? parseFloat(event.timelineOrder) : parseInt(event.date, 10);
+
+                    if (!isNaN(orderValue)) {
+                        allEventsFlat.push({ ...event, branchId: branch.id, orderValue });
+                        allEvents[event.id] = { ...event, branchId: branch.id, orderValue }; 
+                    }
+                });
+            });
+
+            allEventsFlat.sort((a, b) => a.orderValue - b.orderValue);
+
+            allEventsFlat.forEach((event, index) => {
+                xIndexMap[event.id] = index;
+            });
+
+            const maxIndex = allEventsFlat.length > 0 ? allEventsFlat.length - 1 : 0;
+            const totalWidth = X_OFFSET + maxIndex * EVENT_SPACING + EVENT_SPACING * 1.5;
+            timelineVisualization.style.width = `${totalWidth}px`;
+            svgElement.setAttribute('width', `${totalWidth}`);
+            
+            let branchIndex = 0;
+            timelineData.filter(b => b.id !== 'mcu-main').forEach(branch => {
+                let yBranchStart;
+                const isChildBranch = !!branch.parentId;
+                
+                if (isChildBranch) {
+                    const parentY = branchYMap[branch.parentId];
+                    yBranchStart = parentY !== undefined 
+                        ? parentY - Y_SUB_BRANCH_OFFSET
+                        : Y_MAIN_LINE - Y_BRANCH_BASE_OFFSET; 
+                } else {
+                    const yDirection = branchIndex % 2 === 0 ? 1 : -1;
+                    const verticalStackingLevel = Math.floor(branchIndex / 2);
+                    
+                    const currentBranchOffset = Y_BRANCH_BASE_OFFSET + (verticalStackingLevel * Y_BRANCH_STACK_SPACING);
+                    yBranchStart = Y_MAIN_LINE + (yDirection * currentBranchOffset);
+                    
+                    branchIndex++;
+                }
+                
+                branchYMap[branch.id] = yBranchStart;
+            });
+
+
+            mainTimeline.events.forEach(event => {
+                const xIndex = xIndexMap[event.id];
+                if (xIndex === undefined) return; 
+                
+                const x = X_OFFSET + xIndex * EVENT_SPACING;
+                const y = Y_MAIN_LINE;
+                eventPositionMap[event.id] = { x, y };
+            });
+
+            let mainLinePoints = mainTimeline.events
+                .map(e => ({ ...e, x: eventPositionMap[e.id]?.x })) 
+                .filter(e => e.x !== undefined) 
+                .sort((a, b) => a.x - b.x) 
+                .map(e => `${e.x},${Y_MAIN_LINE}`)
+                .join(' ');
+            
+            const mainLine = createSvgElement('polyline', {
+                points: mainLinePoints,
+                class: 'timeline-svg-path mcu-line',
+            });
+            svgElement.appendChild(mainLine);
+            
+            mainTimeline.events.forEach(event => {
+                const pos = eventPositionMap[event.id];
+                if (!pos) return; 
+
+                svgElement.appendChild(createSvgElement('circle', {
+                    cx: pos.x, cy: pos.y, r: 6, class: 'merge-dot', fill: '#3182ce'
+                }));
+                
+                const cardHtml = createEventCardHTML(event, true);
+                cardsContainer.innerHTML += cardHtml;
+                
+                const cardEl = cardsContainer.lastElementChild;
+                cardEl.style.left = `${pos.x}px`;
+                cardEl.style.top = `${pos.y + CARD_CENTERING_OFFSET}px`; 
+            });
+
+
+            timelineData.filter(b => b.id !== 'mcu-main').forEach(branch => {
+                
+                const yBranchStart = branchYMap[branch.id];
+                if (yBranchStart === undefined) return;
+
+                const isChildBranch = !!branch.parentId;
+                let branchLinePoints = [];
+                let mergeSourcePos = null;
+                let mergeTargetPos = null;
+                let rebootLinks = []; 
+                
+                branch.events.forEach(event => {
+                    const xIndex = xIndexMap[event.id];
+                    if (xIndex === undefined) return; 
+
+                    const x = X_OFFSET + xIndex * EVENT_SPACING; 
+                    const y = yBranchStart;
+
+                    eventPositionMap[event.id] = { x, y };
+                    
+                    branchLinePoints.push({ x, y, id: event.id });
+
+                    if (event.rebootsEventId && allEvents[event.rebootsEventId]) {
+                        const targetPos = eventPositionMap[event.rebootsEventId];
+                        if (targetPos) {
+                             rebootLinks.push({ source: { x, y, id: event.id }, target: targetPos });
+                        }
+                    }
+
+                    if (event.isMergeSource) {
+                        mergeSourcePos = { x, y };
+                        const targetEvent = allEvents[event.mergeEventId];
+                        
+                        const targetBranchY = branchYMap[event.mergeTarget] || Y_MAIN_LINE; 
+                        
+                        if (targetEvent) {
+                            const targetX = xIndexMap[targetEvent.id] !== undefined 
+                                ? X_OFFSET + xIndexMap[targetEvent.id] * EVENT_SPACING
+                                : null;
+
+                            if (targetX !== null) {
+                                mergeTargetPos = { x: targetX, y: targetBranchY };
+                            }
+                        }
+                    }
+                });
+
+
+                if (branchLinePoints.length > 0) {
+                    const sortedPoints = branchLinePoints.sort((a, b) => a.x - b.x);
+                    const polylinePoints = sortedPoints.map(p => `${p.x},${p.y}`).join(' ');
+                    
+                    const branchLine = createSvgElement('polyline', {
+                        points: polylinePoints,
+                        class: 'timeline-svg-path merge-line',
+                        id: `branch-line-${branch.id}`
+                    });
+                    svgElement.appendChild(branchLine);
+                }
+                
+                branch.events.forEach(event => {
+                    const pos = eventPositionMap[event.id];
+                    if (!pos) return; 
+                    
+                    const cardHtml = createEventCardHTML(event, false);
+                    cardsContainer.innerHTML += cardHtml;
+                    
+                    const cardEl = cardsContainer.lastElementChild;
+                    cardEl.style.left = `${pos.x}px`;
+                    cardEl.style.top = `${pos.y + CARD_CENTERING_OFFSET}px`; 
+                    cardEl.classList.add('bg-gray-800', 'border-marvel-gold/50'); 
+
+                    let dotColor = isChildBranch ? '#6EE7B7' : '#f6ad55';
+                    if (event.id === 'deadpool&wolverine') {
+                         dotColor = '#e53e3e';
+                    }
+                    svgElement.appendChild(createSvgElement('circle', {
+                        cx: pos.x, cy: pos.y, r: 5, class: 'merge-dot', fill: dotColor
+                    }));
+                });
+
+
+                rebootLinks.forEach(link => {
+                    const pathD = `M ${link.source.x},${link.source.y} L ${link.target.x},${link.target.y}`;
+                    svgElement.appendChild(createSvgElement('path', {
+                        d: pathD,
+                        class: 'timeline-svg-path reboot-line'
+                    }));
+                });
+
+                if (mergeSourcePos && mergeTargetPos) {
+                    const controlY = (mergeSourcePos.y + mergeTargetPos.y) / 2;
+                    
+                    const pathD = `M ${mergeSourcePos.x},${mergeSourcePos.y} 
+                                   C ${mergeSourcePos.x},${controlY} 
+                                     ${mergeTargetPos.x},${controlY} 
+                                     ${mergeTargetPos.x},${mergeTargetPos.y}`;
+
+                    const mergeLine = createSvgElement('path', {
+                        d: pathD,
+                        class: 'timeline-svg-path merge-line',
+                        stroke: '#e53e3e',
+                        'stroke-width': 4
+                    });
+                    svgElement.appendChild(mergeLine);
+                    
+                    const targetDot = svgElement.querySelector(`circle[cx="${mergeTargetPos.x}"][cy="${mergeTargetPos.y}"]`);
+                    if (targetDot) {
+                        targetDot.setAttribute('r', 8); 
+                        targetDot.setAttribute('fill', '#e53e3e'); 
+                    }
+                }
+                
+                if (branch.parentId && branch.originEventId && branchLinePoints.length > 0) {
+                    const parentY = branchYMap[branch.parentId]; 
+                    const childY = branchYMap[branch.id]; 
+                    const originEventPos = eventPositionMap[branch.originEventId];
+                    
+                    const sortedPoints = branchLinePoints.sort((a, b) => a.x - b.x);
+                    const firstChildEventPos = sortedPoints[0]; 
+                    
+                    if (originEventPos && firstChildEventPos && parentY !== undefined && childY !== undefined) {
+                        
+                        const startX = originEventPos.x;
+                        const startY = parentY; 
+                        
+                        const endX = firstChildEventPos.x;
+                        const endY = childY;
+                        
+                        const controlY = startY + (endY - startY) * 0.5; 
+                        
+                        const pathD = `M ${startX},${startY} 
+                                       C ${startX},${controlY} 
+                                         ${endX},${controlY} 
+                                         ${endX},${endY}`;
+
+                        const splitLine = createSvgElement('path', {
+                            d: pathD,
+                            class: 'timeline-svg-path split-line',
+                        });
+                        svgElement.appendChild(splitLine);
+                        
+                        const originDot = svgElement.querySelector(`circle[cx="${originEventPos.x}"][cy="${parentY}"]`);
+                        if (originDot) {
+                            originDot.setAttribute('r', 8); 
+                            originDot.setAttribute('fill', '#6EE7B7'); 
+                        }
+                    }
+                }
+            });
+            
+            console.log('Horizontal Timeline rendered successfully with centered card placement and all merges/splits.');
+        }
+
+        window.onload = renderTimeline;
+    </script>
+
+</body>
+</html>
